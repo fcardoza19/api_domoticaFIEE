@@ -4,14 +4,19 @@ import mysql.connector
 app = Flask(__name__)
 
 # Conexión a la base de datos de Azure MySQL con SSL
-mydb = mysql.connector.connect(
-    host="domoticadb.mysql.database.azure.com",
-    user="admin_domoticadb",
-    password="&re&KJi8j!%g(",
-    database="domoticadb",
-    ssl_ca='C:/Users/ferna/Descargas/DigiCertGlobalRootG2.crt.pem',  # Ruta al certificado SSL
-    ssl_disabled=False
-)
+try:
+    mydb = mysql.connector.connect(
+        host="domoticadb.mysql.database.azure.com",
+        user="admin_domoticadb",
+        password="&re&KJi8j!%g(",
+        database="domoticadb",
+        ssl_ca='C:/Users/ferna/Descargas/DigiCertGlobalRootG2.crt.pem',  # Ruta al certificado SSL
+        ssl_disabled=False
+    )
+    mydb.ping(reconnect=True, attempts=3, delay=5)
+    print("Conexión exitosa a la base de datos")
+except Exception as e:
+    print(f"Error al conectar a la base de datos: {e}")
 
 # Ruta para la página de bienvenida
 @app.route('/')
@@ -24,15 +29,20 @@ def home():
 # Ruta para insertar datos en la base de datos
 @app.route('/api/insertdata', methods=['POST'])
 def insert_data():
-    esp_id = request.form['esp_id']
-    ldr_status = request.form['ldr_status']
-    cursor = mydb.cursor()
-    query = "INSERT INTO sensor_data (esp_id, ldr_status) VALUES (%s, %s)"
-    cursor.execute(query, (esp_id, ldr_status))
-    mydb.commit()
-    return "Datos insertados", 200
+    try:
+        esp_id = request.form['esp_id']
+        ldr_status = request.form['ldr_status']
+        cursor = mydb.cursor()
+        query = "INSERT INTO sensor_data (esp_id, ldr_status) VALUES (%s, %s)"
+        cursor.execute(query, (esp_id, ldr_status))
+        mydb.commit()
+        print("Datos insertados correctamente")
+        return "Datos insertados", 200
+    except Exception as e:
+        print(f"Error al insertar datos: {e}")
+        return "Error al insertar datos", 500
 
-# Ruta para obtener el último estado de los datos del sensor
+# Ruta para obtener el último estado del sensor
 @app.route('/api/getlateststatus', methods=['GET'])
 def get_latest_status():
     cursor = mydb.cursor(dictionary=True)
