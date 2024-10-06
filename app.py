@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import mysql.connector
 
 app = Flask(__name__)
@@ -24,12 +24,21 @@ def home():
 # Ruta para insertar datos en la base de datos
 @app.route('/api/insertdata', methods=['POST'])
 def insert_data():
-    sensor_value = request.form['sensorValue']
+    esp_id = request.form['esp_id']
+    ldr_status = request.form['ldr_status']
     cursor = mydb.cursor()
-    query = "INSERT INTO sensor_data (value) VALUES (%s)"
-    cursor.execute(query, (sensor_value,))
+    query = "INSERT INTO sensor_data (esp_id, ldr_status) VALUES (%s, %s)"
+    cursor.execute(query, (esp_id, ldr_status))
     mydb.commit()
     return "Datos insertados", 200
+
+# Ruta para obtener el último estado de los datos del sensor
+@app.route('/api/getlateststatus', methods=['GET'])
+def get_latest_status():
+    cursor = mydb.cursor(dictionary=True)
+    cursor.execute("SELECT esp_id, ldr_status, timestamp FROM sensor_data ORDER BY timestamp DESC LIMIT 1")
+    result = cursor.fetchone()
+    return jsonify(result) if result else jsonify({"ldr_status": "No hay datos"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
